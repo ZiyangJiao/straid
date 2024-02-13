@@ -320,7 +320,7 @@ uint64_t StorageMod::raid_write(UIO_Info uio)
         meta_mod->blk_bitmap->reset(v_stdblks[i]->user_offset / BLK_SIZE);
     }
 
-    vector<DIO_Info> v_dios = split_chunk2dio(uio);
+    vector<DIO_Info> v_dios = split_chunk2dio(uio); // uio -> dio
     if (is_fullstripe(uio.user_offset, uio.length)) // Full stripe write
     {
         s_encodemod->encode_fullstripe(thread_id, v_dios);
@@ -442,10 +442,10 @@ void StorageMod::workers_run(int worker_id)
 uint64_t StorageMod::raid_write_direct(UIO_Info uio)
 {
     uint64_t io_count = 0;
-    uint64_t worker_id = uio.user_id;
+    uint64_t worker_id = uio.user_id; //user_id is thread_id
 
     vector<UIO_Info *> v_suios;
-    split_stripe_aligned(&uio, &v_suios);
+    split_stripe_aligned(&uio, &v_suios); //split a single uio into stripe-sized ios
     assert(v_suios.size() > 0);
 
     for (size_t ck = 0; ck < v_suios.size(); ck++)
@@ -461,7 +461,7 @@ uint64_t StorageMod::raid_write_direct(UIO_Info uio)
         {
             bool False = false;
             bool True = true;
-            if (sse->stripe_lock.compare_exchange_strong(False, True) == true)
+            if (sse->stripe_lock.compare_exchange_strong(False, True) == true) // two-phase stripe submission
             {
                 sse->SSTthreadid.store(worker_id);
                 sse->is_frozen.store(false);

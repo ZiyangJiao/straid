@@ -23,7 +23,7 @@ extern atomic_uint64_t Cache_Hit;
 extern atomic_uint64_t Cache_Miss;
 StorageMod *GloStor;
 
-bool SEncodeMod::encode_fullstripe(int tid, vector<DIO_Info> v_dios)
+bool SEncodeMod::encode_fullstripe(int tid, vector<DIO_Info> v_dios) // tid = thread id
 {
     assert(v_dios.size() == DATACHUNK_NUM);
     auto batchque = &GloStor->v_batchque.at(tid)->batch_queue;
@@ -31,7 +31,7 @@ bool SEncodeMod::encode_fullstripe(int tid, vector<DIO_Info> v_dios)
     auto SST = &GloStor->meta_mod->StdRAID_meta->sstable_mod;
     int stripeid = devoff2stripe(v_dios[0].dev_offset);
 
-    vector<char *> v_databuf;
+    // vector<char *> v_databuf; // not used
     for (size_t i = 0; i < DATACHUNK_NUM; i++)
     {
         memcpy(v_endatabuf[tid].at(i), v_dios.at(i).buf, v_dios.at(i).length);
@@ -69,8 +69,8 @@ bool SEncodeMod::encode_fullstripe(int tid, vector<DIO_Info> v_dios)
         // printf("Encoder: fd:%d  paritypos:%d  devoff:%ld\n", fd, ppos, devoff);
         // printf("Encoder: v_enparitybuf:%x\n", (int)v_enparitybuf[tid].at(i)[0]);
     }
-    uint64_t ret = io_uring_submit(&stdring[tid]);
-    iouring_wait(&stdring[tid], ret);
+    uint64_t ret = io_uring_submit(&stdring[tid]); // submit all the available events in the ring. returns the number of submitted submission queue entries
+    iouring_wait(&stdring[tid], ret); // io_uring_wait_cqe wrapper. wait # ret events to complete
 
     return true;
 }
@@ -105,7 +105,7 @@ bool SEncodeMod::encode_partialstripe(int tid, vector<DIO_Info> v_dios)
         paritycache->get(v_enparitybuf.at(tid), stemp_ptrs, pchunk_slen);
     }
     else
-    {
+    { // the novelty of the two-phase writing approach in StRAID leverages the latency of executing a reconstruction read in the batching phase to opportunistically aggregate incoming SS-writes
         Cache_Miss.fetch_add(1);
         for (size_t i = 0; i < PARITYCHUNK_NUM; i++)
         {

@@ -95,7 +95,7 @@ void *thread_worker(void *worker_info)
             if (SeqW_Offset.load() * iosize > DATASET_SIZE)
                 SeqW_Offset.store(0);
             uint64_t last_buf_start = 0;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count; i++) //info->count = (DATASET_SIZE / G_IOSIZE / NUM_THREADS);
             {
                 if (iosize < BLK_SIZE || iosize % BLK_SIZE != 0)
                 {

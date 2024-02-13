@@ -248,7 +248,7 @@ void test_SeqWrite(int testid, StorageMod *storagemod, vector<char *> *workloadw
         info->is_rand = false;
         info->thread_id = i;
         info->io_size = G_IOSIZE;
-        info->offset = o_align(i * (DATASET_SIZE / NUM_THREADS), G_IOSIZE);
+        info->offset = o_align(i * (DATASET_SIZE / NUM_THREADS), G_IOSIZE); // each thread starts at a different offset
         info->count = (DATASET_SIZE / G_IOSIZE / NUM_THREADS);
         info->loop = LOOP;
         info->storagemod = storagemod;
